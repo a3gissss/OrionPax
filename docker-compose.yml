@@ -1,0 +1,29 @@
+# Local-only chains for e2e tests. Never point the engine at mainnet from tests.
+services:
+  solana:
+    image: solanalabs/solana:v1.18.26
+    command: ["solana-test-validator", "--reset", "--rpc-port", "8899", "--bind-address", "0.0.0.0"]
+    ports: ["8899:8899", "8900:8900"]
+
+  eth:
+    image: ghcr.io/foundry-rs/foundry:stable
+    entrypoint: ["anvil", "--host", "0.0.0.0", "--chain-id", "1", "--accounts", "12", "--block-time", "1"]
+    ports: ["8545:8545"]
+
+  base:
+    image: ghcr.io/foundry-rs/foundry:stable
+    entrypoint: ["anvil", "--host", "0.0.0.0", "--chain-id", "8453", "--accounts", "12", "--block-time", "1"]
+    ports: ["8546:8545"]
+
+  robinhood:
+    # Chain id is configurable; set ROBINHOOD_CHAIN_ID once confirmed from official docs.
+    image: ghcr.io/foundry-rs/foundry:stable
+    entrypoint: ["sh", "-c", "anvil --host 0.0.0.0 --chain-id ${ROBINHOOD_CHAIN_ID:-31338} --accounts 12 --block-time 1"]
+    ports: ["8547:8545"]
+
+  fork:
+    # Optional: set FORK_URL to a (testnet) RPC to fork real state.
+    image: ghcr.io/foundry-rs/foundry:stable
+    entrypoint: ["sh", "-c", "anvil --host 0.0.0.0 --accounts 12 ${FORK_URL:+--fork-url $FORK_URL}"]
+    ports: ["8548:8545"]
+    profiles: ["fork"]

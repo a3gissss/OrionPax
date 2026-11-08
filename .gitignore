@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.*
+*.keystore
+wallet*.json
+fixtures/.local-wallets.json
+test-ledger/

@@ -1,0 +1,14 @@
+{
+  "name": "@mint-engine/router-solana",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --root ../.. packages/router-solana/test",
+    "e2e": "echo \"e2e not implemented yet for router-solana\" && exit 1"
+  },
+  "dependencies": { "@mint-engine/core": "0.1.0" }
+}

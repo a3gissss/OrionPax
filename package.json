@@ -1,0 +1,19 @@
+{
+  "name": "mint-engine",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "typecheck": "tsc -b --pretty",
+    "chains:up": "docker compose up -d",
+    "chains:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": { "node": ">=22" }
+}

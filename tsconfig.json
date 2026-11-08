@@ -1,0 +1,18 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/wallets" },
+    { "path": "packages/chain-solana-nft" },
+    { "path": "packages/chain-solana-token" },
+    { "path": "packages/router-solana" },
+    { "path": "packages/chain-evm-nft" },
+    { "path": "packages/chain-evm-token" },
+    { "path": "packages/router-evm-l1" },
+    { "path": "packages/router-evm-l2" },
+    { "path": "packages/watcher" },
+    { "path": "packages/engine" },
+    { "path": "apps/server" },
+    { "path": "packages/fixtures" }
+  ]
+}

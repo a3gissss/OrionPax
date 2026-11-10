@@ -1,0 +1,15 @@
+[package]
+name = "pump_curve_fixture"
+version = "0.1.0"
+edition = "2021"
+description = "Local-only test program implementing the classic pump.fun buy layout. Never deploy outside a local validator."
+publish = false
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+solana-program = "=1.18.26"
+
+[profile.release]
+overflow-checks = true

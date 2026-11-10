@@ -1,4 +1,4 @@
-// @mint-engine/router-evm-l2: TxRouter for Base (OP Stack, Flashblocks) and Robinhood Chain (Arbitrum Orbit).
+// @mint-engine/router-evm-l2: TxRouter for Base (OP Stack, 200 ms blocks since Denim) and Robinhood Chain (Arbitrum Orbit).
 export {
   L2Router, L2_CHAINS, MAX_SEND_STATS, createBaseRouter, createRobinhoodRouter,
   type ConfirmOptions, type EndpointAttempt, type L2RouterOptions, type SendStat,

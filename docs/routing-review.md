@@ -255,12 +255,12 @@ Over-paying the priority fee wastes money.
 | `watcher` | Candy Guard `startDate`, slot | `SaleStarted` event, block | `newHeads`/`logs` at 200 ms cadence | Feed/`newHeads`; use `arbBlockNumber` for block triggers |
 | `wallets` | Local encrypted keystore, 1–10 wallets; secrets never leave the package | ← | ← | ← |
 | `engine` | Pre-build, simulate, pre-sign, fire on trigger, confirm | ← | ← | ← |
-| `fixtures` | Local validator plus Metaplex programs (see `packages/fixtures/scripts/README.md`) | Anvil + ERC721A / 1155 / curve fixtures | Anvil, chain id 8453 | Anvil; **set `ROBINHOOD_CHAIN_ID=4663`** to mirror mainnet |
+| `fixtures` | Local validator plus Metaplex programs (see `packages/fixtures/scripts/README.md`) | Anvil + ERC721A / 1155 / curve fixtures | Anvil, chain id 8453 | Anvil, chain id 4663 (compose default) |
 
-**Follow-ups for other units (not in this unit's scope):**
+**Integration notes (resolved at merge):**
 
-- `docker-compose.yml` defaults Robinhood to chain id 31338. 4663 is the verified mainnet id.
-- `core`'s `preconfirmed` status should be documented as N/A for Base post-Denim. On Robinhood it maps to "seen on the sequencer feed".
+- `docker-compose.yml` now defaults Robinhood to chain id 4663, the verified mainnet id.
+- `core` documents `acceptPreconf` / `preconfirmed` as a no-op on Base post-Denim. `router-evm-l2` keeps the old Flashblocks path only behind `legacyFlashblocks` (off by default).
 
 ---
 

@@ -16,9 +16,9 @@ services:
     ports: ["8546:8545"]
 
   robinhood:
-    # Chain id is configurable; set ROBINHOOD_CHAIN_ID once confirmed from official docs.
+    # Robinhood Chain mainnet id 4663 (testnet 46630).
     image: ghcr.io/foundry-rs/foundry:stable
-    entrypoint: ["sh", "-c", "anvil --host 0.0.0.0 --chain-id ${ROBINHOOD_CHAIN_ID:-31338} --accounts 12 --block-time 1"]
+    entrypoint: ["sh", "-c", "anvil --host 0.0.0.0 --chain-id ${ROBINHOOD_CHAIN_ID:-4663} --accounts 12 --block-time 1"]
     ports: ["8547:8545"]
 
   fork:

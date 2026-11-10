@@ -7,3 +7,4 @@ dist/
 wallet*.json
 fixtures/.local-wallets.json
 test-ledger/
+.claude/

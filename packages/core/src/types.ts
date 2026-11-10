@@ -41,6 +41,8 @@ export interface NftMintTarget {
   tokenId?: string;
   /** Custom ABI fragment / function name when style = "custom". */
   customFunction?: { signature: string; args: unknown[] };
+  /** Solana Candy Machine guard-group label (e.g. "public"). Omit for the default guard set. */
+  guardGroup?: string;
 }
 
 export interface TokenLaunchTarget {
@@ -54,6 +56,9 @@ export interface TokenLaunchTarget {
   spendPerWallet: string;
   /** Max slippage in basis points. */
   slippageBps: number;
+  /** Which launchpad definition to use (e.g. "pumpfun", "generic-bonding-curve", "uniswap-v2-router").
+   *  Adapters fall back to their address-based config when omitted. */
+  launchpadKind?: string;
 }
 
 export type MintTarget = NftMintTarget | TokenLaunchTarget;
@@ -93,12 +98,22 @@ export interface FeeStrategy {
 export interface PreparedTx {
   chain: ChainId;
   walletId: string;
-  /** Serialized unsigned tx (Solana message / EVM RLP unsigned). */
+  /**
+   * Bytes the wallet signs.
+   * - Solana: a full wire-format transaction. It may already carry other signatures (e.g. a fresh
+   *   asset keypair); the wallet fills its own slot and keeps the rest.
+   * - EVM: an unsigned serialized EIP-1559 transaction. The nonce may be a placeholder; the
+   *   router/engine sets the real one (see `nonce`) before signing.
+   */
   unsigned: Uint8Array;
+  /** EVM nonce baked into `unsigned`, if the adapter assigned a real one. Undefined = placeholder. */
+  nonce?: number;
   /** Native value sent, base units. */
   value: string;
   /** Estimated compute units (Solana) or gas (EVM). */
   computeOrGas?: number;
+  /** L2 only: estimated L1 data fee in wei, charged on top of L2 gas. Counted against maxTotalFee. */
+  l1DataFee?: string;
   /** Expiry hint: Solana lastValidBlockHeight / EVM deadline block. */
   validUntil?: number;
   /** Human-readable summary for the dashboard. */
@@ -121,6 +136,10 @@ export interface SentTx {
   id: string;
   sentAt: number;
   via: string[];
+  /** Time from send start to first endpoint accepting it. */
+  sendLatencyMs?: number;
+  /** Last send error when no endpoint accepted the tx (via is empty). */
+  error?: string;
 }
 
 export interface TxOutcome {
@@ -160,8 +179,18 @@ export interface TxRouter {
   readonly chains: ChainId[];
   /** Broadcast signed txs as fast as possible (fan-out / bundles / private relay). */
   send(signed: Array<{ prepared: PreparedTx; signed: Uint8Array }>, fees: FeeStrategy): Promise<SentTx[]>;
-  /** Resolve when each tx reaches a terminal status or the timeout passes. */
-  confirm(sent: SentTx[], opts?: { timeoutMs?: number; acceptPreconf?: boolean }): Promise<TxOutcome[]>;
+  /**
+   * Resolve when each tx reaches a terminal status or the timeout passes.
+   * Contract: return "expired" ONLY when the tx can no longer land (e.g. Solana blockhash past
+   * lastValidBlockHeight, bundle target blocks passed). A timeout returns the current status
+   * ("sent"), never "expired"; the engine retries expired wallets, so a wrong "expired" can double-mint.
+   * `acceptPreconf`: resolve on a sequencer preconfirmation where one exists. Base has no separate
+   * preconf since the Denim upgrade (200 ms canonical blocks, 5 Nov 2026), so it is a no-op there.
+   */
+  confirm(
+    sent: SentTx[],
+    opts?: { timeoutMs?: number; acceptPreconf?: boolean; onUpdate?: (outcome: TxOutcome) => void },
+  ): Promise<TxOutcome[]>;
 }
 
 export type GoLiveTrigger =

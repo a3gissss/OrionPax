@@ -243,28 +243,38 @@ describe("L2Router.confirm", () => {
     return handler;
   }
 
-  it("Base: preconfirmed (Flashblock) before confirmed (canonical)", async () => {
+  it("Base (default, post-Denim): a receipt is the confirmation, no preconf step", async () => {
     const s = await stub(chainStub());
     const seen: TxOutcome[] = [];
     const r = track(new L2Router([{ chain: "base", rpcUrl: s.url }], { pollIntervalMs: 5 }));
+    const sent = await r.send([{ prepared: prepared("base", "w1"), signed: rawTx(1) }], {});
+    const [out] = await r.confirm(sent, { timeoutMs: 5000, acceptPreconf: true, onUpdate: (o) => seen.push(o) });
+    expect(seen.map((o) => o.status)).toEqual(["confirmed"]);
+    expect(out).toMatchObject({ status: "confirmed", slotOrBlock: 101 });
+  });
+
+  it("Base legacyFlashblocks: preconfirmed (Flashblock) before confirmed (canonical)", async () => {
+    const s = await stub(chainStub());
+    const seen: TxOutcome[] = [];
+    const r = track(new L2Router([{ chain: "base", rpcUrl: s.url }], { pollIntervalMs: 5, legacyFlashblocks: true }));
     const sent = await r.send([{ prepared: prepared("base", "w1"), signed: rawTx(1) }], {});
     const [out] = await r.confirm(sent, { timeoutMs: 5000, onUpdate: (o) => seen.push(o) });
     expect(seen.map((o) => o.status)).toEqual(["preconfirmed", "confirmed"]);
     expect(out).toMatchObject({ status: "confirmed", slotOrBlock: 101 });
   });
 
-  it("Base acceptPreconf resolves at the Flashblock", async () => {
+  it("Base legacyFlashblocks: acceptPreconf resolves at the Flashblock", async () => {
     const s = await stub(chainStub());
-    const r = track(new L2Router([{ chain: "base", rpcUrl: s.url }], { pollIntervalMs: 5 }));
+    const r = track(new L2Router([{ chain: "base", rpcUrl: s.url }], { pollIntervalMs: 5, legacyFlashblocks: true }));
     const sent = await r.send([{ prepared: prepared("base", "w1"), signed: rawTx(1) }], {});
     const [out] = await r.confirm(sent, { timeoutMs: 5000, acceptPreconf: true });
     expect(out!.status).toBe("preconfirmed");
   });
 
-  it("Base: detects preconf via a separate Flashblocks RPC's pending block", async () => {
+  it("Base legacyFlashblocks: detects preconf via a separate Flashblocks RPC's pending block", async () => {
     const canon = await stub((m) => (m === "eth_blockNumber" ? "0x10" : null));
     const fb = await stub((m) => (m === "eth_getBlockByNumber" ? { number: "0x11", transactions: [keccak256(rawTx(1))] } : null));
-    const r = track(new L2Router([{ chain: "base", rpcUrl: canon.url }], { pollIntervalMs: 5, flashblocksRpcUrl: fb.url }));
+    const r = track(new L2Router([{ chain: "base", rpcUrl: canon.url }], { pollIntervalMs: 5, legacyFlashblocks: true, flashblocksRpcUrl: fb.url }));
     const sent = await r.send([{ prepared: prepared("base", "w1"), signed: rawTx(1) }], {});
     const [out] = await r.confirm(sent, { timeoutMs: 5000, acceptPreconf: true });
     expect(out).toMatchObject({ status: "preconfirmed", slotOrBlock: 0x11 });

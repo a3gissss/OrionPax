@@ -1,8 +1,8 @@
 // EIP-1559 fee selection for the L2s.
 //
 // Base (OP Stack): the sequencer orders txs by priority fee *within* each 200 ms
-// Flashblock, and a broadcast Flashblock's order is locked. A modest tip helps
-// inside a Flashblock, but arriving before the cut matters more than outbidding.
+// canonical block (post-Denim; previously a Flashblock). A modest tip helps
+// inside a block, but arriving before the cut matters more than outbidding.
 //
 // Robinhood Chain (Arbitrum Orbit / Nitro): the sequencer is first-come-first-serve
 // and ignores the tip for ordering, so we pay a minimal (zero) tip.

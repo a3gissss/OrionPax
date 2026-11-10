@@ -1,6 +1,6 @@
 // E2E against local anvil chains only (docker). Never mainnet RPCs, never real keys.
 //   E2E_BASE_RPC      default http://127.0.0.1:8546 (chain 8453, 1 s blocks)
-//   E2E_ROBINHOOD_RPC default http://127.0.0.1:8547 (placeholder chain 31338, 1 s blocks)
+//   E2E_ROBINHOOD_RPC default http://127.0.0.1:8547 (chain 4663, 1 s blocks)
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { hexToBytes, type Hex } from "viem";
 import { mnemonicToAccount } from "viem/accounts";
@@ -66,7 +66,7 @@ describe("router-evm-l2 e2e (local anvil)", () => {
     }
   });
 
-  it("Base: Flashblocks stub reports preconfirmed before confirmed", async () => {
+  it("Base legacyFlashblocks: stub reports preconfirmed before confirmed", async () => {
     const anvil = mkRpc(BASE_RPC);
     // Flashblocks-style stub: a tx the sequencer holds (anvil pending pool) gets a
     // receipt for the pending block (head + 1) before the canonical block exists.
@@ -79,7 +79,7 @@ describe("router-evm-l2 e2e (local anvil)", () => {
       const head = BigInt(await anvil.request<string>("eth_blockNumber"));
       return { transactionHash: params[0], status: "0x1", blockNumber: `0x${(head + 1n).toString(16)}`, blockHash: null };
     });
-    const router = new L2Router([{ chain: "base", rpcUrl: BASE_RPC }], { flashblocksRpcUrl: stub.url, pollIntervalMs: 25 });
+    const router = new L2Router([{ chain: "base", rpcUrl: BASE_RPC }], { legacyFlashblocks: true, flashblocksRpcUrl: stub.url, pollIntervalMs: 25 });
     // Hold block production so the Flashblock window is observable deterministically.
     await anvil.request("evm_setIntervalMining", [0]);
     try {

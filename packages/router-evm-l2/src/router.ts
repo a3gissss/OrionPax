@@ -1,11 +1,13 @@
-// TxRouter for the L2s: Base (OP Stack + Flashblocks) and Robinhood Chain (Arbitrum Orbit / Nitro).
+// TxRouter for the L2s: Base (OP Stack) and Robinhood Chain (Arbitrum Orbit / Nitro).
 //
 // Both have a single sequencer and no public mempool, so there's nothing to bid
 // against in a mempool. What wins is reaching the sequencer early:
-// - Base orders by priority fee only *within* a 200 ms Flashblock; once a Flashblock
-//   is broadcast its order is locked.
-// - Robinhood (Nitro) is first-come-first-serve. Timeboost (a paid express lane) may
-//   or may not exist there; see timeboost.ts.
+// - Base: since the Denim upgrade (mainnet 5 Nov 2026) every block is a canonical 200 ms
+//   block ordered by priority fee; Flashblocks and their preconfirmations are retired.
+//   A receipt in a canonical block is the confirmation. The old Flashblocks preconf path
+//   is kept behind `legacyFlashblocks` (off by default) for pre-Denim test networks.
+// - Robinhood (Nitro) is first-come-first-serve; fees don't reorder. Its docs don't
+//   mention Timeboost (a paid express lane); see timeboost.ts.
 //
 // So `send` fires every signed tx to every endpoint at once over pre-warmed keep-alive
 // connections, and records per-tx send latency.
@@ -43,9 +45,15 @@ export interface SendStat {
 }
 
 export interface L2RouterOptions {
-  /** Confirmation poll interval. Default 50 ms (a quarter of a Flashblock). */
+  /** Confirmation poll interval. Default 50 ms (a quarter of a Base block). */
   pollIntervalMs?: number;
-  /** Base only: a Flashblocks-aware RPC whose receipts / `pending` block include preconfirmed txs. */
+  /**
+   * Base only: enable the pre-Denim Flashblocks preconfirmation path ("preconfirmed" status
+   * from Flashblocks receipts / the `pending` block). Off by default: Base mainnet retired
+   * Flashblocks on 5 Nov 2026, and `pending` now just resolves to the latest canonical block.
+   */
+  legacyFlashblocks?: boolean;
+  /** Base + legacyFlashblocks only: a Flashblocks-aware RPC, if separate from the primary. */
   flashblocksRpcUrl?: string;
   /** Robinhood only: Timeboost express lane. STUB, UNVERIFIED, off unless `enabled`. */
   expressLane?: ExpressLaneConfig;
@@ -103,7 +111,7 @@ export class L2Router implements TxRouter {
         primary: mk(cfg.rpcUrl, cfg.wsUrl),
         extras: (cfg.extraRpcUrls ?? []).filter((u) => u !== cfg.rpcUrl).map((u) => mk(u)),
       };
-      if (cfg.chain === "base" && opts.flashblocksRpcUrl && opts.flashblocksRpcUrl !== cfg.rpcUrl) {
+      if (cfg.chain === "base" && opts.legacyFlashblocks && opts.flashblocksRpcUrl && opts.flashblocksRpcUrl !== cfg.rpcUrl) {
         lane.flashblocks = mk(opts.flashblocksRpcUrl);
       }
       if (cfg.chain === "robinhood" && opts.expressLane?.enabled) {
@@ -304,7 +312,8 @@ export class L2Router implements TxRouter {
   ): Promise<void> {
     const hashes = items.map(({ o }) => o.sent.id);
     const receiptCalls: RpcCall[] = hashes.map((h) => ({ method: "eth_getTransactionReceipt", params: [h] }));
-    const isBase = lane.chain === "base";
+    // Preconfirmation tracking only applies to Base with the legacy Flashblocks path on.
+    const isBase = lane.chain === "base" && this.opts.legacyFlashblocks === true;
     // Txs still waiting for a first sighting are worth checking on the Flashblocks RPC.
     const fbItems = isBase && lane.flashblocks ? items.filter(({ o }) => o.status === "sent") : [];
 

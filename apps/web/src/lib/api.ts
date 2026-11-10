@@ -18,7 +18,36 @@ type Route = keyof ApiRoutes;
 type ReqOf<R extends Route> = ApiRoutes[R] extends { req: infer Q } ? Q : undefined;
 type ResOf<R extends Route> = ApiRoutes[R]["res"];
 
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{16,256}$/;
+
+/**
+ * Token from the `#token=…` link the server prints at startup, if present. The hash is removed
+ * from the address bar (and history entry) right away so the token doesn't linger in the URL.
+ * The hash is never sent to the server, so the token doesn't appear in request logs either.
+ */
+export function takeTokenFromLocation(loc: Pick<Location, "hash" | "pathname" | "search"> = window.location, hist: Pick<History, "replaceState"> = window.history): string | null {
+  const hash = loc.hash.startsWith("#") ? loc.hash.slice(1) : loc.hash;
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  const token = params.get("token");
+  if (token === null) return null;
+  params.delete("token");
+  const rest = params.toString();
+  try {
+    hist.replaceState(null, "", `${loc.pathname}${loc.search}${rest ? `#${rest}` : ""}`);
+  } catch {
+    /* non-browser environment */
+  }
+  return TOKEN_PATTERN.test(token) ? token : null;
+}
+
 export function loadToken(): string | null {
+  // A token in the link wins over a stored one: a new server run means a new token.
+  const fromLink = typeof window !== "undefined" ? takeTokenFromLocation() : null;
+  if (fromLink) {
+    saveToken(fromLink);
+    return fromLink;
+  }
   try {
     return sessionStorage.getItem(TOKEN_STORAGE_KEY);
   } catch {

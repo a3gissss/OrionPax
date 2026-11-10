@@ -36,6 +36,17 @@ describe("dashboard against the mock backend", () => {
     await waitFor(() => expect(within(screen.getByRole("table", { name: "Jobs" })).getByText("done")).toBeInTheDocument());
   });
 
+  it("takes the session token from the #token= link, skips the gate and clears the hash", async () => {
+    installMockBackend();
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    window.history.replaceState(null, "", `/#token=${MOCK_TOKEN}`);
+    render(<App wsUrl="ws://test/ws" />);
+    expect(await screen.findByLabelText("Vault passphrase")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Session token")).not.toBeInTheDocument();
+    expect(sessionStorage.getItem(TOKEN_STORAGE_KEY)).toBe(MOCK_TOKEN);
+    expect(window.location.hash).toBe("");
+  });
+
   it("returns to the token gate when the token is rejected", async () => {
     installMockBackend();
     sessionStorage.setItem(TOKEN_STORAGE_KEY, "bogus");

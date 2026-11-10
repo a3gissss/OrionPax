@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@types/ws": "^8.18.2",
-    "viem": "^2.57.17"
+    "viem": "^2.57.17",
+    "@mint-engine/fixtures": "0.1.0"
   }
 }

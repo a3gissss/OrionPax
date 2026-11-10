@@ -4,11 +4,22 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run --root ../.. packages/watcher/test",
-    "e2e": "echo \"e2e not implemented yet for watcher\" && exit 1"
+    "e2e": "vitest run --config vitest.e2e.config.ts"
   },
-  "dependencies": { "@mint-engine/core": "0.1.0" }
+  "dependencies": {
+    "@mint-engine/core": "0.1.0"
+  },
+  "devDependencies": {
+    "solc": "^0.8.38",
+    "viem": "^2.57.17"
+  }
 }

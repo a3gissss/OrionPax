@@ -101,7 +101,7 @@ describe.skipIf(!up)("engine e2e (anvil, chain 8453)", () => {
     });
     const view = await engine.run(job.id);
 
-    expect(view.status).toBe("done");
+    expect(view.status, JSON.stringify(view.outcomes.map((o) => ({ w: o.sent.walletId, s: o.status, e: o.error })))).toBe("done");
     expect(view.outcomes).toHaveLength(10);
     expect(view.outcomes.every((o) => o.status === "confirmed" && /^0x[0-9a-f]{64}$/.test(o.sent.id))).toBe(true);
     for (const o of view.outcomes) {

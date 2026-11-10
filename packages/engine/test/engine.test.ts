@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { MockAdapter, MockRouter, mockSigner, mockWallets } from "@mint-engine/core";
 import type { CreateJobRequest, EngineEvent, PreparedTx, TxOutcome, WalletRef } from "@mint-engine/core";
-import { Engine, EngineError, JsonFileLedgerStore, MemoryLedgerStore, checkFeeCap, estimateMaxTotalFee } from "../src/index.js";
+import { Engine, EngineError, JsonFileLedgerStore, MemoryLedgerStore, checkFeeCap, eip1559GasBound, estimateMaxTotalFee } from "../src/index.js";
+import { serializeTransaction } from "viem";
 import type { LedgerStore } from "../src/index.js";
 
 function setup(opts: { n?: number; store?: LedgerStore; router?: MockRouter; adapter?: MockAdapter; wallets?: WalletRef[] } = {}) {
@@ -200,6 +201,23 @@ describe("run", () => {
     expect(checkFeeCap(tx, { maxTotalFee: "1" }, undefined)).toMatch(/cannot be bounded/);
     expect(checkFeeCap(tx, {}, undefined)).toBeUndefined();
     expect(estimateMaxTotalFee({ ...tx, chain: "solana", computeOrGas: 200_000 }, { priorityFee: "1000000", jitoTip: "10" })).toBe(5000n + 200_000n + 10n);
+  });
+
+  it("bounds EVM fees from the tx itself (gas x maxFeePerGas), no fees.maxFee needed", () => {
+    const hex = serializeTransaction({
+      type: "eip1559", chainId: 8453, nonce: 3, to: "0x0000000000000000000000000000000000000001", value: 10n ** 18n,
+      gas: 150_000n, maxFeePerGas: 2_000_000_000n, maxPriorityFeePerGas: 1_000_000n, data: "0xdeadbeef",
+    });
+    const unsigned = Uint8Array.from(Buffer.from(hex.slice(2), "hex"));
+    expect(eip1559GasBound(unsigned)).toEqual({ gas: 150_000n, maxFeePerGas: 2_000_000_000n });
+    const tx: PreparedTx = { chain: "base", walletId: "w1", unsigned, value: "0", computeOrGas: 999, description: "" };
+    expect(estimateMaxTotalFee(tx, {})).toBe(150_000n * 2_000_000_000n);
+    // L1 data fee (OP-stack) is added on top
+    expect(estimateMaxTotalFee({ ...tx, l1DataFee: "5" }, {})).toBe(150_000n * 2_000_000_000n + 5n);
+    expect(checkFeeCap(tx, { maxTotalFee: (150_000n * 2_000_000_000n).toString() }, undefined)).toBeUndefined();
+    expect(checkFeeCap(tx, { maxTotalFee: "1" }, undefined)).toMatch(/exceeds cap/);
+    // Not EIP-1559 bytes -> not decodable
+    expect(eip1559GasBound(new Uint8Array([0x01, 0xc0]))).toBeUndefined();
   });
 
   it("refuses quantity above the per-wallet limit", async () => {

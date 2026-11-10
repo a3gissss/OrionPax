@@ -10,3 +10,4 @@ test-ledger/
 .claude/
 mint-engine.config.json
 ledger.json
+.demo/

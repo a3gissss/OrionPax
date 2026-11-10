@@ -45,6 +45,9 @@ Without `--config`, `npm run dev -w @mint-engine/server` starts with fake wallet
 - `packages/fixtures`: local test contracts and helpers
 - `apps/server`: dashboard API + real backend + vault CLI; `apps/web`: dashboard UI
 
+## Using several wallets on a token launch
+All wallets in a job are quoted from the same curve state, but their buys land one after another, so each later wallet pays the price impact of the earlier ones. **Set slippage to cover your own group's combined impact**, not just other buyers'. Example: 10 wallets × 0.1 ETH on a curve with 30 ETH of virtual liquidity moves the price about 7%, so a 5% slippage setting reverts the last few buys.
+
 ## Known limits
 - **pump.fun:** the bundled launchpad definition matches pump.fun's older buy layout; the live program needs its own `LaunchpadDefinition` before Solana token launches will work on mainnet.
 - **Event triggers** aren't wired to chain subscriptions yet; use `time`, `state-poll` or `slot-or-block`.

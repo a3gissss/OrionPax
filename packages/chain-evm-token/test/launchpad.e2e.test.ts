@@ -98,7 +98,10 @@ describe.each(CHAINS)("chain-evm-token e2e on $chain", ({ chain, rpcUrl }) => {
     expect(state.live).toBe(true);
     expect(BigInt(state.pricePerUnit!)).toBeGreaterThan(0n);
 
-    const prepared = await Promise.all(wallets.map((_, i) => adapter.prepare(target(token), walletRef(i), {})));
+    // All 10 buys are quoted from the same curve state but land one after another, so the
+    // later wallets pay the price impact of the earlier ones (10 x 0.1 ETH on a 30 ETH virtual
+    // curve is ~7%). Slippage must cover the group's own impact: 5% reverts the last buys.
+    const prepared = await Promise.all(wallets.map((_, i) => adapter.prepare(target(token, 1000), walletRef(i), {})));
     for (const p of prepared) {
       expect(p.value).toBe(parseEther("0.1").toString());
       expect((await adapter.simulate(p)).ok).toBe(true);

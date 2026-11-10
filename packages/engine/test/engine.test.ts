@@ -71,6 +71,20 @@ describe("run", () => {
     expect(st).toEqual(["pending", "waiting", "firing", "done"]);
   });
 
+  it("runs beforeSign on every tx and signs what it returns", async () => {
+    const wallets = mockWallets(3);
+    const byId = new Map(wallets.map((w) => [w.id, w]));
+    const signedBytes: string[] = [];
+    const engine = new Engine({
+      adapters: [new MockAdapter("base", "nft")], routers: [new MockRouter(["base"])],
+      getSigner: (id) => ({ wallet: byId.get(id)!, async signTransaction(u) { signedBytes.push(new TextDecoder().decode(u)); return u; } }),
+      beforeSign: async (tx, wallet) => ({ ...tx, nonce: 7, unsigned: new TextEncoder().encode(`patched:${wallet.id}`) }),
+    });
+    const view = await engine.run(engine.createJob(req(ids(3))).id);
+    expect(view.status).toBe("done");
+    expect(signedBytes.sort()).toEqual(["patched:w1", "patched:w2", "patched:w3"]);
+  });
+
   it("retries only failed wallets, up to maxRetries", async () => {
     const { engine, router } = setup();
     router.failWallets.add("w3");

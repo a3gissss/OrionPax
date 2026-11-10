@@ -3,7 +3,7 @@ import { CHAIN_FAMILY, MAX_WALLETS_PER_JOB } from "@mint-engine/core";
 import type {
   ChainAdapter, ChainFamily, CreateJobRequest, EngineEvent, GoLiveTrigger, JobStatus,
   JobView, MintJob, MintState, PreparedTx, SentTx, SimulationResult, TxOutcome, TxRouter, TxStatus,
-  WalletSigner,
+  WalletRef, WalletSigner,
 } from "@mint-engine/core";
 import { checkFeeCap, estimateMaxTotalFee } from "./fees.js";
 import { MemoryLedgerStore } from "./ledger.js";
@@ -46,6 +46,12 @@ export interface EngineOptions {
   retryDelayMs?: number;
   acceptPreconf?: boolean;
   defaultMaxRetries?: number;
+  /**
+   * Last chance to adjust a prepared tx before it is signed (on every arm, including
+   * re-prepares and retries). Used to set the real EVM nonce, since the EVM adapters
+   * leave a placeholder (`PreparedTx.nonce` undefined).
+   */
+  beforeSign?: (tx: PreparedTx, wallet: WalletRef) => Promise<PreparedTx>;
 }
 
 export class EngineError extends Error {
@@ -477,8 +483,12 @@ export class Engine {
   private async arm(rt: Runtime, walletId: string): Promise<Armed> {
     const { job } = rt.record;
     const signer = this.getSigner(walletId);
-    const prepared = await rt.adapter.prepare(job.target, signer.wallet, job.fees);
+    let prepared = await rt.adapter.prepare(job.target, signer.wallet, job.fees);
     if (prepared.walletId !== walletId) throw new EngineError("adapter", `adapter returned tx for ${prepared.walletId}`);
+    if (this.opts.beforeSign) {
+      prepared = await this.opts.beforeSign(prepared, signer.wallet);
+      if (prepared.walletId !== walletId) throw new EngineError("adapter", `beforeSign changed walletId to ${prepared.walletId}`);
+    }
     this.txEvent(rt, walletId, "prepared");
     const signed = await signer.signTransaction(prepared.unsigned);
     this.txEvent(rt, walletId, "signed");

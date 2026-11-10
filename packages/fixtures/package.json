@@ -4,11 +4,29 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run --root ../.. packages/fixtures/test",
-    "e2e": "echo \"e2e not implemented yet for fixtures\" && exit 1"
+    "compile:contracts": "node scripts/compile-contracts.mjs",
+    "check:contracts": "node scripts/compile-contracts.mjs --check",
+    "e2e": "vitest run --config vitest.e2e.config.ts"
   },
-  "dependencies": { "@mint-engine/core": "0.1.0" }
+  "dependencies": {
+    "@mint-engine/core": "0.1.0",
+    "viem": "^2.57.16"
+  },
+  "files": [
+    "dist",
+    "contracts",
+    "scripts"
+  ],
+  "devDependencies": {
+    "solc": "0.8.38"
+  }
 }

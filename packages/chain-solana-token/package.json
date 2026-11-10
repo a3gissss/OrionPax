@@ -4,11 +4,19 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run --root ../.. packages/chain-solana-token/test",
-    "e2e": "echo \"e2e not implemented yet for chain-solana-token\" && exit 1"
+    "e2e": "vitest run --root . --config test/vitest.e2e.config.ts"
   },
-  "dependencies": { "@mint-engine/core": "0.1.0" }
+  "dependencies": {
+    "@mint-engine/core": "0.1.0",
+    "@solana/web3.js": "^1.99.0"
+  }
 }

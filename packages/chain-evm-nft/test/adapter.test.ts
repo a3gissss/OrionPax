@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  encodeErrorResult, encodeFunctionData, parseAbi, parseTransaction, toFunctionSelector, type Hex, type PublicClient,
+  type Abi, encodeErrorResult, encodeFunctionData, parseAbi, parseTransaction, toFunctionSelector, type Hex, type PublicClient,
 } from "viem";
 import type { NftMintTarget, WalletRef } from "@mint-engine/core";
 import { EvmNftAdapter, MintLimitError, decodeRevertData, hasSelector, withNonce } from "../src/index.js";
@@ -23,7 +23,10 @@ function fakeClient(o: { saleActive?: boolean; minted?: bigint; estimateFails?: 
   const client = {
     getCode: async () => `0x6080${push4("mint(uint256)")}${push4("price()")}00` as Hex,
     getStorageAt: async () => `0x${"0".repeat(64)}` as Hex,
-    readContract: async ({ functionName }: { functionName: string }) => {
+    readContract: async (req: { abi: Abi; functionName: string; args?: unknown[] }) => {
+      const { functionName } = req;
+      // Encode like viem does, so invalid args (e.g. bad address checksums) fail here too.
+      encodeFunctionData(req as Parameters<typeof encodeFunctionData>[0]);
       calls.push(functionName);
       if (functionName in getters) return getters[functionName];
       throw new Error("execution reverted");

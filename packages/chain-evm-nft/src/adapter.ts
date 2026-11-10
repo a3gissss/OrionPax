@@ -52,7 +52,7 @@ export class MintLimitError extends Error {
 const EIP1967_IMPL_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc" as const;
 const EIP1967_BEACON_SLOT = "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50" as const;
 /** Address used for state-override eth_call probes when no wallet is involved (local-only, never signs). */
-const PROBE_ACCOUNT = "0x00000000000000000000000000000000000Fa1Ce" as const;
+const PROBE_ACCOUNT = "0x00000000000000000000000000000000000fa1ce" as const; // all-lowercase: valid without checksum
 
 type Getters = { price?: string; maxPerWallet?: string; saleActive?: string; paused?: boolean; maxSupply?: string; minted?: string };
 

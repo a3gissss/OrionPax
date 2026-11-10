@@ -1,6 +1,45 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist" },
-  "include": ["src"],
-  "references": [{ "path": "../../packages/core" }]
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../packages/core"
+    },
+    {
+      "path": "../../packages/engine"
+    },
+    {
+      "path": "../../packages/wallets"
+    },
+    {
+      "path": "../../packages/watcher"
+    },
+    {
+      "path": "../../packages/chain-solana-nft"
+    },
+    {
+      "path": "../../packages/chain-solana-token"
+    },
+    {
+      "path": "../../packages/router-solana"
+    },
+    {
+      "path": "../../packages/chain-evm-nft"
+    },
+    {
+      "path": "../../packages/chain-evm-token"
+    },
+    {
+      "path": "../../packages/router-evm-l1"
+    },
+    {
+      "path": "../../packages/router-evm-l2"
+    }
+  ]
 }

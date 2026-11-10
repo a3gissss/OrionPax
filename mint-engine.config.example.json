@@ -1,0 +1,10 @@
+{
+  "vaultPath": "wallets.keystore",
+  "ledgerPath": "ledger.json",
+  "chains": {
+    "solana":    { "rpcUrl": "https://YOUR-SOLANA-RPC", "extraRpcUrls": [], "privateRelayUrl": "https://mainnet.block-engine.jito.wtf" },
+    "ethereum":  { "rpcUrl": "https://YOUR-ETH-RPC", "evmChainId": 1, "privateRelayUrl": "https://rpc.flashbots.net" },
+    "base":      { "rpcUrl": "https://mainnet.base.org", "evmChainId": 8453 },
+    "robinhood": { "rpcUrl": "https://rpc.mainnet.chain.robinhood.com", "evmChainId": 4663 }
+  }
+}

@@ -8,3 +8,5 @@ wallet*.json
 fixtures/.local-wallets.json
 test-ledger/
 .claude/
+mint-engine.config.json
+ledger.json

@@ -15,14 +15,27 @@
     "dev": "tsc -b && node dist/main.js",
     "start": "node dist/main.js",
     "test": "vitest run --root ../.. apps/server/test",
-    "e2e": "tsc -b && vitest run --config vitest.e2e.config.ts"
+    "e2e": "tsc -b && vitest run --config vitest.e2e.config.ts",
+    "start:real": "node dist/main.js --config ../../mint-engine.config.json",
+    "vault": "tsc -b && node dist/vault-cli.js"
   },
   "dependencies": {
+    "@mint-engine/chain-evm-nft": "0.1.0",
+    "@mint-engine/chain-evm-token": "0.1.0",
+    "@mint-engine/chain-solana-nft": "0.1.0",
+    "@mint-engine/chain-solana-token": "0.1.0",
     "@mint-engine/core": "0.1.0",
+    "@mint-engine/engine": "0.1.0",
+    "@mint-engine/router-evm-l1": "0.1.0",
+    "@mint-engine/router-evm-l2": "0.1.0",
+    "@mint-engine/router-solana": "0.1.0",
+    "@mint-engine/wallets": "0.1.0",
+    "@mint-engine/watcher": "0.1.0",
     "ws": "^8.22.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/ws": "^8.18.2"
+    "@types/ws": "^8.18.2",
+    "viem": "^2.57.17"
   }
 }

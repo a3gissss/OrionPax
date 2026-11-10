@@ -14,8 +14,9 @@ import type {
   ChainAdapter, ChainConfig, FeeStrategy, MintState, MintTarget, NftMintTarget,
   PreparedTx, SimulationResult, WalletRef,
 } from "@mint-engine/core";
+import { pickJitoTipAccount } from "@mint-engine/core";
 import {
-  createNoopSigner, generateSigner, publicKey as toPublicKey, signTransaction,
+  createNoopSigner, generateSigner, lamports, publicKey as toPublicKey, signTransaction,
   some, transactionBuilder, type PublicKey, type Signer, type TransactionBuilder, type Umi,
 } from "@metaplex-foundation/umi";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
@@ -25,7 +26,7 @@ import {
   safeFetchMintCounter, type CandyGuard, type CandyMachine, type DefaultGuardSetMintArgs,
 } from "@metaplex-foundation/mpl-core-candy-machine";
 import { mplCore } from "@metaplex-foundation/mpl-core";
-import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
+import { setComputeUnitLimit, setComputeUnitPrice, transferSol } from "@metaplex-foundation/mpl-toolbox";
 import {
   REFUSED_GUARDS, computeUnitLimit, parsePriorityFee, priorityFeeLamports, summarizeGuards,
   type GuardSetLike, type GuardSummary,
@@ -195,9 +196,15 @@ export class SolanaCoreCandyMachineAdapter implements ChainAdapter {
       }));
     }
 
+    // Jito tip: a transfer that must be inside the signed tx. It goes BEFORE the mints, because
+    // botTax charges any mint that is not the transaction's last instruction.
+    const jitoTip = fees.jitoTip !== undefined ? parsePriorityFee(fees.jitoTip) : 0n;
+    const tipAccount = jitoTip > 0n ? toPublicKey(pickJitoTipAccount()) : undefined;
+
     const withBudget = (units: number): TransactionBuilder => {
       let b = transactionBuilder().add(setComputeUnitLimit(this.umi, { units }));
       if (microLamports > 0n) b = b.add(setComputeUnitPrice(this.umi, { microLamports }));
+      if (tipAccount) b = b.add(transferSol(this.umi, { source: walletSigner, destination: tipAccount, amount: lamports(jitoTip) }));
       return b.add(mints).setFeePayer(walletSigner);
     };
 
@@ -215,9 +222,9 @@ export class SolanaCoreCandyMachineAdapter implements ChainAdapter {
       : Math.min(this.fallbackCu * t.quantity, MAX_CU_LIMIT);
 
     const maxTotalFee = fees.maxTotalFee !== undefined ? parsePriorityFee(fees.maxTotalFee) : undefined;
-    const networkFee = 5_000n * BigInt(1 + assets.length) + priorityFeeLamports(cuLimit, microLamports);
+    const networkFee = 5_000n * BigInt(1 + assets.length) + priorityFeeLamports(cuLimit, microLamports) + jitoTip;
     if (maxTotalFee !== undefined && networkFee > maxTotalFee) {
-      throw new Error(`fee ${networkFee} lamports (base + priority at CU ${cuLimit}) exceeds maxTotalFee ${maxTotalFee}`);
+      throw new Error(`fee ${networkFee} lamports (base + priority at CU ${cuLimit} + jito tip) exceeds maxTotalFee ${maxTotalFee}`);
     }
 
     // 2) Final tx with the measured CU limit, partially signed by the asset keypair(s).

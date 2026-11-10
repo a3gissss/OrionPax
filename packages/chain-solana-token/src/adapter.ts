@@ -1,9 +1,10 @@
 // ChainAdapter for Solana bonding-curve token launches (pump.fun-style).
 
 import {
-  ComputeBudgetProgram, Connection, PublicKey, TransactionMessage, VersionedTransaction,
+  ComputeBudgetProgram, Connection, PublicKey, SystemProgram, TransactionMessage, VersionedTransaction,
   type Commitment, type TransactionInstruction,
 } from "@solana/web3.js";
+import { pickJitoTipAccount } from "@mint-engine/core";
 import type {
   ChainAdapter, ChainConfig, FeeStrategy, MintState, MintTarget, PreparedTx, SimulationResult,
   TokenLaunchTarget, WalletRef,
@@ -173,7 +174,7 @@ export class SolanaTokenAdapter implements ChainAdapter {
     const microLamports = parseLamports(fees.priorityFee, "priorityFee") ?? 0n;
     if (microLamports > U64_MAX) throw new Error("priorityFee exceeds u64");
     const maxTotalFee = parseLamports(fees.maxTotalFee, "maxTotalFee");
-    // The Jito tip is added by the router (as a transfer to a tip account), but it counts toward the cap.
+    // Jito tip: a transfer to a tip account inside the signed tx (added below), counted toward the cap.
     const jitoTip = parseLamports(fees.jitoTip, "jitoTip") ?? 0n;
     const priorityLamports = (microLamports * BigInt(this.computeUnitLimit) + 999_999n) / 1_000_000n;
     const totalFee = LAMPORTS_PER_SIGNATURE + priorityLamports + jitoTip;
@@ -207,6 +208,9 @@ export class SolanaTokenAdapter implements ChainAdapter {
         ComputeBudgetProgram.setComputeUnitLimit({ units: this.computeUnitLimit }),
       ];
       if (microLamports > 0n) ixs.push(ComputeBudgetProgram.setComputeUnitPrice({ microLamports }));
+      if (jitoTip > 0n) {
+        ixs.push(SystemProgram.transfer({ fromPubkey: user, toPubkey: new PublicKey(pickJitoTipAccount()), lamports: jitoTip }));
+      }
       ixs.push(createAssociatedTokenAccountIdempotentIx(user, userAta, user, state.mint, tokenProgram));
       ixs.push(...launchpad.buildBuy({ state, user, userAta, tokenProgram, quote }));
 

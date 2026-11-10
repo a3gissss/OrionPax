@@ -3,6 +3,7 @@
 // already be inside the signed message.
 
 import { AccountRole, address, type Address, type Instruction } from "@solana/kit";
+import { JITO_TIP_ACCOUNTS as CORE_JITO_TIP_ACCOUNTS } from "@mint-engine/core";
 
 export const SYSTEM_PROGRAM_ADDRESS = address("11111111111111111111111111111111");
 export const COMPUTE_BUDGET_PROGRAM_ADDRESS = address("ComputeBudget111111111111111111111111111111");
@@ -11,16 +12,7 @@ export const COMPUTE_BUDGET_PROGRAM_ADDRESS = address("ComputeBudget111111111111
  * Jito mainnet tip accounts. Any one works. Picking one at random spreads write-lock
  * contention. You can also fetch the live list from the block engine (`getTipAccounts`).
  */
-export const JITO_TIP_ACCOUNTS: readonly Address[] = [
-  "96gYZGLnJYVFmbjzopPSU6QiEV5fGqZNyN9nmNhvrZU5",
-  "HFqU5x63VTqvQss8hp11i4wVV8bD44PvwucfZ2bU7gRe",
-  "Cw8CFyM9FkoMi7K7Crf6HNQqf4uEMzpKw6QNghXLvLkY",
-  "ADaUMid9yfUytqMBgopwjb2DTLSokTSzL1zt6iGPaS49",
-  "DfXygSm4jCyNCybVYYK6DwvWqjKee8pbDmJGcLWNDXjh",
-  "ADuUkR4vqLUMWXxW9gh6D6L8pMSawimctcNZ5pGwDcEt",
-  "DttWaMuVvTiduZRnguLF7jNxTgiMBZ1hyAumKUiL2KRL",
-  "3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT",
-].map((a) => address(a));
+export const JITO_TIP_ACCOUNTS: readonly Address[] = CORE_JITO_TIP_ACCOUNTS.map((a) => address(a));
 
 export function randomJitoTipAccount(accounts: readonly Address[] = JITO_TIP_ACCOUNTS): Address {
   const a = accounts[Math.floor(Math.random() * accounts.length)];

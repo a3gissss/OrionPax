@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ComputeBudgetProgram, Connection, Keypair, PublicKey, VersionedTransaction } from "@solana/web3.js";
-import type { TokenLaunchTarget, WalletRef } from "@mint-engine/core";
+import { ComputeBudgetProgram, Connection, Keypair, PublicKey, SystemProgram, VersionedTransaction } from "@solana/web3.js";
+import { JITO_TIP_ACCOUNTS, type TokenLaunchTarget, type WalletRef } from "@mint-engine/core";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID, constantProductSolCost, createPumpFunLaunchpad, feeOf, getAssociatedTokenAddress,
   PUMP_BUY_DISCRIMINATOR, PUMP_CURVE_DISCRIMINATOR, PUMP_GLOBAL_DISCRIMINATOR, SolanaTokenAdapter, TOKEN_PROGRAM_ID,
@@ -211,6 +211,24 @@ describe("SolanaTokenAdapter", () => {
     const a = new SolanaTokenAdapter({ connection: fakeConnection(curveData()), launchpads: [pump] });
     await expect(a.prepare(target, wallet, { jitoTip: "1000000", maxTotalFee: "100000" })).rejects.toThrow(/jito/);
     await expect(a.prepare(target, wallet, { jitoTip: "10000", maxTotalFee: "100000" })).resolves.toBeDefined();
+  });
+
+  it("puts the jito tip transfer inside the tx, before the buy", async () => {
+    const a = new SolanaTokenAdapter({ connection: fakeConnection(curveData()), launchpads: [pump] });
+    const msg = VersionedTransaction.deserialize((await a.prepare(target, wallet, { jitoTip: "10000" })).unsigned).message;
+    const keys = msg.staticAccountKeys.map((k) => k.toBase58());
+    const ixs = msg.compiledInstructions;
+    const tipIx = ixs.findIndex((ix) => keys[ix.programIdIndex] === SystemProgram.programId.toBase58());
+    expect(tipIx).toBeGreaterThanOrEqual(0);
+    const to = keys[ixs[tipIx]!.accountKeyIndexes[1]!]!;
+    expect(JITO_TIP_ACCOUNTS).toContain(to);
+    // SystemProgram transfer data: u32 index 2, then u64 lamports.
+    expect(Buffer.from(ixs[tipIx]!.data).readBigUInt64LE(4)).toBe(10_000n);
+    const buyIx = ixs.findIndex((ix) => keys[ix.programIdIndex] === programId.toBase58());
+    expect(tipIx).toBeLessThan(buyIx);
+    // No tip unless asked for.
+    const plain = VersionedTransaction.deserialize((await a.prepare(target, wallet, {})).unsigned).message;
+    expect(plain.compiledInstructions.some((ix) => plain.staticAccountKeys[ix.programIdIndex]!.equals(SystemProgram.programId))).toBe(false);
   });
 
   it("requires explicit launchpads", () => {

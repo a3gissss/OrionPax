@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { Keypair, VersionedTransaction, ComputeBudgetProgram } from "@solana/web3.js";
+import { Keypair, VersionedTransaction, ComputeBudgetProgram, SystemProgram } from "@solana/web3.js";
 import { publicKey as toPk, sol, some } from "@metaplex-foundation/umi";
-import type { NftMintTarget, WalletRef } from "@mint-engine/core";
+import { JITO_TIP_ACCOUNTS, type NftMintTarget, type WalletRef } from "@mint-engine/core";
 import { SolanaCoreCandyMachineAdapter, CORE_CANDY_GUARD_PROGRAM_ID } from "../src/index.js";
 import { buildFixture, decodeBase64, type Fixture } from "./fixtures.js";
 
@@ -117,6 +117,29 @@ describe("prepare", () => {
     const msg = tx.message.serialize();
     expect(f.umi.eddsa.verify(msg, tx.signatures[0]!, toPk(kp.publicKey.toBase58()))).toBe(true);
     expect(Buffer.from(tx.signatures[1]!).equals(assetSig)).toBe(true);
+  });
+
+  it("adds the jito tip inside the tx, before the mint (botTax-safe), and keeps the asset signature valid", async () => {
+    const f = buildFixture();
+    const p = await setup(f).prepare(target(f), walletFor(Keypair.generate()), { jitoTip: "10000" });
+    const tx = VersionedTransaction.deserialize(p.unsigned);
+    const keys = tx.message.staticAccountKeys.map((k) => k.toBase58());
+    const ixs = tx.message.compiledInstructions;
+    const tipIx = ixs.findIndex((ix) => keys[ix.programIdIndex] === SystemProgram.programId.toBase58());
+    expect(tipIx).toBeGreaterThanOrEqual(0);
+    expect(JITO_TIP_ACCOUNTS).toContain(keys[ixs[tipIx]!.accountKeyIndexes[1]!]);
+    expect(Buffer.from(ixs[tipIx]!.data).readBigUInt64LE(4)).toBe(10_000n);
+    // the candy-guard mint is still the last instruction
+    expect(keys[ixs.at(-1)!.programIdIndex]).toBe(CORE_CANDY_GUARD_PROGRAM_ID);
+    expect(tipIx).toBeLessThan(ixs.length - 1);
+    // the asset signed the message that includes the tip
+    expect(f.umi.eddsa.verify(tx.message.serialize(), tx.signatures[1]!, toPk(keys[1]!))).toBe(true);
+  });
+
+  it("counts the jito tip toward maxTotalFee", async () => {
+    const f = buildFixture();
+    await expect(setup(f).prepare(target(f), walletFor(Keypair.generate()), { jitoTip: "1000000", maxTotalFee: "100000" }))
+      .rejects.toThrow(/jito tip/);
   });
 
   it("omits setComputeUnitPrice when no priority fee is given", async () => {
